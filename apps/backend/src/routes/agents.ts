@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   createConversationalAgent,
   requestConversationToken,
+  requestScribeToken,
   supportedAgentLanguages,
   supportedModelIds,
   supportedVoiceIds,
@@ -92,6 +93,15 @@ agentsRouter.post('/conversation-token', async (req: Request, res: Response, nex
       userId: payload.userId,
     });
 
+    res.json(token);
+  } catch (error) {
+    next(error);
+  }
+});
+
+agentsRouter.post('/scribe-token', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = await requestScribeToken();
     res.json(token);
   } catch (error) {
     next(error);

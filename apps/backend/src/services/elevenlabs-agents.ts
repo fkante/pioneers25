@@ -11,6 +11,7 @@ export const voiceGenders = ['female', 'male'] as const;
 export type VoiceGender = (typeof voiceGenders)[number];
 
 const ELEVENLABS_API_BASE_URL = 'https://api.elevenlabs.io';
+const ELEVENLABS_SCRIBE_TOKEN_PATH = '/v1/single-use-token/realtime_scribe';
 
 const languageVoiceCatalog = {
   en: {
@@ -214,6 +215,47 @@ export const requestConversationToken = async ({
     throw new AppError(
       502,
       'Unable to retrieve conversation token from ElevenLabs. Please try again later.'
+    );
+  }
+};
+
+type ScribeTokenResponse = {
+  token?: string;
+};
+
+export const requestScribeToken = async (): Promise<{ token: string }> => {
+  try {
+    const response = await fetch(new URL(ELEVENLABS_SCRIBE_TOKEN_PATH, ELEVENLABS_API_BASE_URL), {
+      method: 'POST',
+      headers: {
+        'xi-api-key': config.elevenlabs.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      throw new AppError(
+        response.status,
+        errorMessage || `Failed to fetch scribe token from ElevenLabs (status ${response.status}).`
+      );
+    }
+
+    const payload = (await response.json()) as ScribeTokenResponse;
+
+    if (!payload?.token) {
+      throw new AppError(502, 'ElevenLabs response did not include a scribe token.');
+    }
+
+    return { token: payload.token };
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    console.error('Error requesting scribe token from ElevenLabs:', error);
+    throw new AppError(
+      502,
+      'Unable to retrieve scribe token from ElevenLabs. Please try again later.'
     );
   }
 };

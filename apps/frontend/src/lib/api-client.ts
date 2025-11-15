@@ -45,6 +45,10 @@ export type ConversationTokenResponse = {
   ttl: number | null
 }
 
+export type ScribeTokenResponse = {
+  token: string
+}
+
 function resolveUrl(path: string) {
   if (!path) {
     return baseUrl
@@ -103,6 +107,12 @@ export function fetchConversationToken(agentId: string, options?: { userId?: str
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
+  })
+}
+
+export function fetchScribeToken() {
+  return request<ScribeTokenResponse>('/agents/scribe-token', {
+    method: 'POST',
   })
 }
 

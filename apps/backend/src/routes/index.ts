@@ -17,6 +17,7 @@ apiRouter.get('/', (_req: Request, res: Response) => {
       users: '/api/users',
       createAgent: '/api/agents',
       conversationToken: '/api/agents/conversation-token',
+      scribeToken: '/api/agents/scribe-token',
     },
   });
 });
