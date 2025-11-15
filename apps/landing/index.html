@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vocalAIz: AI Voice Agents for Your Business</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              'brand-purple': '#7C3AED',
+              'brand-fuchsia': '#C026D3',
+              'brand-light-bg': '#FFFFFF',
+              'brand-light-card': '#F9FAFB',
+              'brand-dark-text': '#111827',
+              'brand-gray-text': '#6B7280',
+              'brand-blue': '#007AFF',
+            },
+            animation: {
+              'fade-in-up': 'fade-in-up 0.8s ease-out forwards',
+              'voice-wave': 'voice-wave 1s infinite ease-in-out alternate',
+              'pulse-ring': 'pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite',
+            },
+            keyframes: {
+              'fade-in-up': {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              'voice-wave': {
+                '0%': { transform: 'scaleY(0.2)' },
+                '100%': { transform: 'scaleY(1)' },
+              },
+              'pulse-ring': {
+                '0%': { transform: 'scale(.33)', opacity: '1' },
+                '80%, 100%': { transform: 'scale(2.5)', opacity: '0' }
+              }
+            },
+            transformOrigin: {
+              'bottom': 'bottom',
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-brand-light-bg text-brand-dark-text">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
