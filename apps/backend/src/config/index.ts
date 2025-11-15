@@ -13,7 +13,6 @@ export const env = createEnv({
     CORS_ORIGIN: z.string().default('http://localhost:5173'),
     ELEVENLABS_API_KEY: z.string().min(1, 'ELEVENLABS_API_KEY is required to talk to ElevenLabs'),
     ELEVENLABS_DEFAULT_MODEL_ID: z.string().default('eleven_turbo_v2_5'),
-    ELEVENLABS_DEFAULT_VOICE_IDS: z.string().optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
@@ -35,9 +34,5 @@ export const config = {
   elevenlabs: {
     apiKey: env.ELEVENLABS_API_KEY,
     defaultModelId: env.ELEVENLABS_DEFAULT_MODEL_ID,
-    defaultVoiceIds:
-      env.ELEVENLABS_DEFAULT_VOICE_IDS?.split(',')
-        .map((voice) => voice.trim())
-        .filter((voice) => voice.length > 0) ?? [],
   },
 } as const;

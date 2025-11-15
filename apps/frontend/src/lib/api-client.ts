@@ -1,3 +1,4 @@
+import type { AgentLanguage, AgentModelId } from '@/lib/agent-options'
 import { env } from '@/env'
 
 const DEFAULT_API_BASE_URL = 'http://localhost:3000/api'
@@ -18,6 +19,24 @@ export interface UsersResponse {
     name: string
     email: string
   }>
+}
+
+export type CreateAgentPayload = {
+  name: string
+  systemPrompt: string
+  firstMessage?: string
+  language: AgentLanguage
+  voiceId: string
+  modelId?: AgentModelId
+}
+
+export type CreateAgentResponse = {
+  agentId: string
+  name: string
+  language: AgentLanguage
+  voiceId: string
+  firstMessage: string
+  modelId: AgentModelId
 }
 
 function resolveUrl(path: string) {
@@ -51,5 +70,15 @@ export function fetchApiInfo() {
 
 export function fetchUsers() {
   return request<UsersResponse>('/users')
+}
+
+export function createAgent(payload: CreateAgentPayload) {
+  return request<CreateAgentResponse>('/agents', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
 }
 

@@ -73,7 +73,7 @@ Example CRUD endpoints.
 ```
 POST /api/agents
 ```
-Creates a new ElevenLabs conversational agent by forwarding your system prompt, preferred voice pool, and desired language (English `en`, French `fr`, or Spanish `es`). The route randomly selects one voice from the provided list (or from `ELEVENLABS_DEFAULT_VOICE_IDS`) and replies with the created `agentId`, `voiceId`, and language metadata.
+Creates a new ElevenLabs conversational agent by forwarding your system prompt, desired language (English `en`, French `fr`, or Spanish `es`), and the exact voice you want to use. Every language exposes a curated female and male ElevenLabs voice ID; the API validates that the submitted `voiceId` matches the `language` so you always know which speaker will be provisioned.
 
 ```bash
 curl -X POST http://localhost:3000/api/agents \
@@ -82,7 +82,7 @@ curl -X POST http://localhost:3000/api/agents \
     "name": "Demo Support Agent",
     "systemPrompt": "You are a multilingual guitar expert.",
     "language": "fr",
-    "voiceIds": ["voiceIdOne", "voiceIdTwo"],
+    "voiceId": "FpvROcY4IGWevepmBWO2",
     "firstMessage": "Bonjour! Pret a discuter guitares?"
   }'
 ```
@@ -108,7 +108,6 @@ LOG_LEVEL=info
 CORS_ORIGIN=http://localhost:5173
 ELEVENLABS_API_KEY=sk_your_elevenlabs_key
 ELEVENLABS_DEFAULT_MODEL_ID=eleven_turbo_v2_5
-ELEVENLABS_DEFAULT_VOICE_IDS=voiceIdOne,voiceIdTwo,voiceIdThree
 ```
 
 | Variable | Description | Default |
@@ -120,7 +119,6 @@ ELEVENLABS_DEFAULT_VOICE_IDS=voiceIdOne,voiceIdTwo,voiceIdThree
 | `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
 | `ELEVENLABS_API_KEY` | API key for the ElevenLabs SDK | _(required)_ |
 | `ELEVENLABS_DEFAULT_MODEL_ID` | Default TTS model for agents | `eleven_turbo_v2_5` |
-| `ELEVENLABS_DEFAULT_VOICE_IDS` | Comma-separated fallback voice IDs used when a request omits `voiceIds` | _(empty)_ |
 
 ## Project Structure
 

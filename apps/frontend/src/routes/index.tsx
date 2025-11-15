@@ -1,7 +1,8 @@
-import { BACKEND_API_URL, fetchApiInfo, fetchUsers } from '@/lib/api-client';
-
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+
+import AgentCreator from '@/components/AgentCreator';
+import { BACKEND_API_URL, fetchApiInfo, fetchUsers } from '@/lib/api-client';
 
 export const Route = createFileRoute('/')({
   component: Dashboard,
@@ -105,6 +106,8 @@ function Dashboard() {
           </article>
         </div>
       </section>
+
+      <AgentCreator />
 
       <section className="rounded-2xl bg-slate-900/70 p-6 shadow-lg ring-1 ring-white/10">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

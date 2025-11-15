@@ -58,10 +58,19 @@ VITE_API_BASE_URL=https://staging.api.yourdomain.com/api
 Shared helpers live in `src/lib/api-client.ts`. They:
 
 - Normalize the configured backend base URL
-- Expose strongly typed helpers (`fetchApiInfo`, `fetchUsers`)
+- Expose strongly typed helpers (`fetchApiInfo`, `fetchUsers`, `createAgent`)
 - Throw descriptive errors when the backend is unreachable
 
-`src/routes/index.tsx` demonstrates how to consume those helpers with TanStack Query, showing connection status, advertised endpoints, and the sample `/api/users` payload.
+`src/routes/index.tsx` demonstrates how to consume those helpers with TanStack Query, showing connection status, advertised endpoints, the sample `/api/users` payload, and the ElevenLabs agent workflow.
+
+---
+
+### ElevenLabs Agent Creator
+
+- `src/components/AgentCreator.tsx` renders a full form on the home route that calls `POST /api/agents` via the backend.
+- Users can configure the agent name, system prompt, first message, language, ElevenLabs TTS model, and must explicitly choose one of the curated female/male voice IDs for that language.
+- Successful requests are persisted locally and rendered as cards (language, voice ID, model, and first message) so you can copy/paste IDs as needed.
+- Supported languages/models/voices are shared with the backend through `src/lib/agent-options.ts` to keep the UI and API contracts aligned; changing the catalog in one place keeps the entire stack consistent.
 
 ---
 

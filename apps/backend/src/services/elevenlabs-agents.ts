@@ -7,18 +7,25 @@ import { AppError } from '../middleware/error-handler.js';
 export const supportedAgentLanguages = ['en', 'fr', 'es'] as const;
 export type AgentLanguage = (typeof supportedAgentLanguages)[number];
 
-const supportedVoiceIds = {
+export const voiceGenders = ['female', 'male'] as const;
+export type VoiceGender = (typeof voiceGenders)[number];
+
+const languageVoiceCatalog = {
   en: {
-    female: 'OYTbf65OHHFELVut7v2H',
+    female: 'OYTbf65OHHFELVut7v2H', // Hope English Female
+    male: 'gfRt6Z3Z8aTbpLfexQ7N', // Josh English Male
   },
   fr: {
-    male: 'kENkNtk0xyzG09WW40xE',
-    female: 'FpvROcY4IGWevepmBWO2',
+    female: 'FpvROcY4IGWevepmBWO2', // Jessy French Female
+    male: 'kENkNtk0xyzG09WW40xE', // Marcel French Male
   },
   es: {
-    female: '86V9x9hrQds83qf7zaGn',
+    female: '86V9x9hrQds83qf7zaGn', // Marta Spanish Female
+    male: '851ejYcv2BoNPjrkw93G', // Diego Spanish Male
   },
-} as const;
+} as const satisfies Record<AgentLanguage, Record<VoiceGender, string>>;
+
+export const supportedVoiceIds = languageVoiceCatalog;
 
 export const supportedModelIds = [
   'eleven_turbo_v2',
@@ -39,30 +46,18 @@ const elevenLabsClient = new ElevenLabsClient({
   apiKey: config.elevenlabs.apiKey,
 });
 
-const unique = (voiceIds: string[]) =>
-  Array.from(
-    new Set(voiceIds.map((voiceId) => voiceId.trim()).filter((voiceId) => voiceId.length > 0))
-  );
+const isVoiceIdForLanguage = (language: AgentLanguage, voiceId: string): boolean =>
+  voiceGenders.some((gender) => supportedVoiceIds[language]?.[gender] === voiceId);
 
-const getLanguageVoices = (language: AgentLanguage): string[] =>
-  Object.values(supportedVoiceIds[language] ?? {});
-
-const selectVoiceId = (language: AgentLanguage, requestedVoiceIds?: string[]): string => {
-  const voicePool = unique([
-    ...(requestedVoiceIds ?? []),
-    ...config.elevenlabs.defaultVoiceIds,
-    ...getLanguageVoices(language),
-  ]);
-
-  if (!voicePool.length) {
-    throw new AppError(
-      400,
-      'No ElevenLabs voice IDs available. Pass `voiceIds` in the request body, set ELEVENLABS_DEFAULT_VOICE_IDS, or add entries to supportedVoiceIds.'
-    );
+const resolveVoiceId = (language: AgentLanguage, voiceId: string): string => {
+  if (isVoiceIdForLanguage(language, voiceId)) {
+    return voiceId;
   }
 
-  const randomIndex = Math.floor(Math.random() * voicePool.length);
-  return voicePool[randomIndex]!;
+  throw new AppError(
+    400,
+    `Voice ID "${voiceId}" is not available for language "${language}". Please pick the female or male preset voice.`
+  );
 };
 
 type CreateAgentOptions = {
@@ -70,7 +65,7 @@ type CreateAgentOptions = {
   systemPrompt: string;
   firstMessage?: string;
   language: AgentLanguage;
-  voiceIds?: string[];
+  voiceId: string;
   modelId?: string;
 };
 
@@ -106,14 +101,14 @@ export const createConversationalAgent = async ({
   systemPrompt,
   firstMessage,
   language,
-  voiceIds,
+  voiceId,
   modelId,
 }: CreateAgentOptions) => {
-  const voiceId = selectVoiceId(language, voiceIds);
+  const resolvedVoiceId = resolveVoiceId(language, voiceId);
   const resolvedModelId = resolveModelId(modelId);
 
   try {
-    console.log('Creating agent with voiceId:', voiceId, 'and modelId:', resolvedModelId);
+    console.log('Creating agent with voiceId:', resolvedVoiceId, 'and modelId:', resolvedModelId);
     const agent = await elevenLabsClient.conversationalAi.agents.create({
       name,
       conversationConfig: {
@@ -125,7 +120,7 @@ export const createConversationalAgent = async ({
           language,
         },
         tts: {
-          voiceId,
+          voiceId: resolvedVoiceId,
           modelId: resolvedModelId,
         },
       },
@@ -134,7 +129,7 @@ export const createConversationalAgent = async ({
 
     return {
       agentId: agent.agentId,
-      voiceId,
+      voiceId: resolvedVoiceId,
       language,
       firstMessage: firstMessage ?? defaultFirstMessages[language],
       modelId: resolvedModelId,

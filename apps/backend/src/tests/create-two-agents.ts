@@ -1,10 +1,11 @@
 import type { AgentLanguage } from '../services/elevenlabs-agents.js';
-import { createConversationalAgent } from '../services/elevenlabs-agents.js';
+import { createConversationalAgent, supportedVoiceIds } from '../services/elevenlabs-agents.js';
 
 type TestScenario = {
   name: string;
   systemPrompt: string;
   language: AgentLanguage;
+  voiceId: string;
   firstMessage?: string;
 };
 
@@ -13,11 +14,13 @@ const scenarios: TestScenario[] = [
     name: 'Test English Agent',
     systemPrompt: 'You are a knowledgeable, concise English-speaking assistant.',
     language: 'en',
+    voiceId: supportedVoiceIds.en.female,
   },
   {
     name: 'Test French Agent',
     systemPrompt: 'Tu es un assistant francophone chaleureux et professionnel.',
     language: 'fr',
+    voiceId: supportedVoiceIds.fr.female,
     firstMessage: 'Bonjour! Comment puis-je vous aider?',
   },
 ];
