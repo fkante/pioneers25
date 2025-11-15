@@ -1,53 +1,58 @@
-import type { AgentRecord } from '@/lib/api-client'
+import type { AgentRecord } from '@/lib/api-client';
 
 type AgentResultCardProps = {
-  agent: AgentRecord
-}
+  agent: AgentRecord;
+};
 
 const formatTimestamp = (iso: string) =>
   new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(iso))
+  }).format(new Date(iso));
 
 export function AgentResultCard({ agent }: AgentResultCardProps) {
   return (
-    <article className="rounded-xl border border-white/5 bg-slate-950/60 p-4">
+    <article className="rounded-2xl border border-[#eef2f6] bg-[#f9fbff] p-5">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">Agent</p>
-          <p className="font-mono text-sm text-white">{agent.agentId}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#6b7a8c]">
+            Agent
+          </p>
+          <p className="font-mono text-sm text-[#344966]">{agent.agentId}</p>
         </div>
-        <span className="text-xs text-slate-400">Created {formatTimestamp(agent.createdAt)}</span>
+        <span className="text-xs text-[#6b7a8c]">Created {formatTimestamp(agent.createdAt)}</span>
       </header>
 
-      <dl className="mt-4 grid gap-2 text-sm text-slate-200">
+      <dl className="mt-4 grid gap-3 text-sm text-[#0d1821]">
         <div className="flex flex-col gap-1">
-          <dt className="text-slate-400">System prompt</dt>
-          <dd className="rounded-lg bg-slate-900/60 px-3 py-2 text-slate-100">{agent.systemPrompt}</dd>
+          <dt className="text-[#6b7a8c]">System prompt</dt>
+          <dd className="max-h-20 overflow-y-auto rounded-2xl border border-[#dbe3eb] bg-white px-3 py-2 text-[#0d1821]">
+            {agent.systemPrompt}
+          </dd>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <dt className="text-slate-400">Name</dt>
-          <dd className="font-medium text-white">{agent.name}</dd>
+          <dt className="text-[#6b7a8c]">Name</dt>
+          <dd className="font-semibold">{agent.name}</dd>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <dt className="text-slate-400">Language</dt>
-          <dd className="font-medium uppercase text-white">{agent.language}</dd>
+          <dt className="text-[#6b7a8c]">Language</dt>
+          <dd className="font-semibold uppercase">{agent.language}</dd>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <dt className="text-slate-400">Voice ID</dt>
-          <dd className="font-mono text-xs text-cyan-300">{agent.voiceId}</dd>
+          <dt className="text-[#6b7a8c]">Voice ID</dt>
+          <dd className="font-mono text-xs text-[#344966]">{agent.voiceId}</dd>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <dt className="text-slate-400">Model</dt>
-          <dd className="font-mono text-xs text-emerald-300">{agent.modelId}</dd>
+          <dt className="text-[#6b7a8c]">Model</dt>
+          <dd className="font-mono text-xs text-[#1b9c85]">{agent.modelId}</dd>
         </div>
         <div className="flex flex-col gap-1">
-          <dt className="text-slate-400">First message</dt>
-          <dd className="rounded-lg bg-slate-900/60 px-3 py-2 text-slate-100">{agent.firstMessage}</dd>
+          <dt className="text-[#6b7a8c]">First message</dt>
+          <dd className="rounded-2xl border border-[#dbe3eb] bg-white px-3 py-2 text-[#0d1821]">
+            {agent.firstMessage}
+          </dd>
         </div>
       </dl>
     </article>
-  )
+  );
 }
-

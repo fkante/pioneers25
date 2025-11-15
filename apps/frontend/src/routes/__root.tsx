@@ -39,9 +39,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="bg-slate-950 text-slate-100">
+      <body className="min-h-screen bg-[#f0f4ef] text-[#0d1821]">
         <Header />
-        <main className="mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">{children}</main>
         <Scripts />
       </body>
     </html>
