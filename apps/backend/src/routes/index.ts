@@ -15,6 +15,7 @@ apiRouter.get('/', (_req: Request, res: Response) => {
       health: '/health',
       api: '/api',
       users: '/api/users',
+      listAgents: '/api/agents',
       createAgent: '/api/agents',
       conversationToken: '/api/agents/conversation-token',
       scribeToken: '/api/agents/scribe-token',

@@ -1,11 +1,7 @@
-import type { CreateAgentResponse } from '@/lib/api-client'
-
-export type CreatedAgentRecord = CreateAgentResponse & {
-  createdAt: string
-}
+import type { AgentRecord } from '@/lib/api-client'
 
 type AgentResultCardProps = {
-  agent: CreatedAgentRecord
+  agent: AgentRecord
 }
 
 const formatTimestamp = (iso: string) =>
@@ -26,6 +22,10 @@ export function AgentResultCard({ agent }: AgentResultCardProps) {
       </header>
 
       <dl className="mt-4 grid gap-2 text-sm text-slate-200">
+        <div className="flex flex-col gap-1">
+          <dt className="text-slate-400">System prompt</dt>
+          <dd className="rounded-lg bg-slate-900/60 px-3 py-2 text-slate-100">{agent.systemPrompt}</dd>
+        </div>
         <div className="flex items-center justify-between gap-4">
           <dt className="text-slate-400">Name</dt>
           <dd className="font-medium text-white">{agent.name}</dd>

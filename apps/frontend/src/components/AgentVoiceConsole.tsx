@@ -1,18 +1,24 @@
 import { CommitStrategy, useConversation, useScribe } from '@elevenlabs/react'
+import { useQuery } from '@tanstack/react-query'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
 import type {
   AgentChatResponsePartEvent,
   IncomingSocketEvent,
   Mode,
 } from '@elevenlabs/client'
-import type { FormEvent } from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import type { AgentRecord } from '@/lib/api-client'
+import { fetchAgents, fetchConversationToken, fetchScribeToken } from '@/lib/api-client'
 import { env } from '@/env'
-import { fetchConversationToken, fetchScribeToken } from '@/lib/api-client'
 
 const DEFAULT_AGENT_ID = 'agent_6001ka3t5pnefdwbpp31myx7ha69'
-const TARGET_AGENT_ID = env.VITE_ELEVENLABS_AGENT_ID ?? DEFAULT_AGENT_ID
+const TARGET_AGENT_ID = env.VITE_ELEVENLABS_AGENT_ID
+const INITIAL_AGENT_ID = TARGET_AGENT_ID ?? DEFAULT_AGENT_ID
 const MAX_VISIBLE_MESSAGES = 40
+
+const formatAgentOptionLabel = (agent: AgentRecord) =>
+  `${agent.name} · ${agent.language.toUpperCase()} · ${agent.agentId.slice(0, 8)}…`
 
 type MessageRole = 'agent' | 'user' | 'system'
 
@@ -56,7 +62,7 @@ const createTranscriptMessage = (
 })
 
 const ensureMicrophoneAccess = async () => {
-  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+  if (typeof navigator === 'undefined') {
     throw new Error('Microphone access is not supported in this browser.')
   }
 
@@ -64,13 +70,20 @@ const ensureMicrophoneAccess = async () => {
 }
 
 export function AgentVoiceConsole() {
-  const [messages, setMessages] = useState<TranscriptMessage[]>([])
+  const agentsQuery = useQuery({
+    queryKey: ['agents'],
+    queryFn: fetchAgents,
+  })
+  const storedAgents = agentsQuery.data?.agents ?? []
+
+  const [messages, setMessages] = useState<Array<TranscriptMessage>>([])
   const [error, setError] = useState<string | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [mode, setMode] = useState<string>('idle')
   const [manualMessage, setManualMessage] = useState('')
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(INITIAL_AGENT_ID)
   const [tokenMetadata, setTokenMetadata] = useState<{
     token: string
     expiresAt: string | null
@@ -90,6 +103,18 @@ export function AgentVoiceConsole() {
   useEffect(() => {
     setUserId((current) => current ?? createRandomId('web-user'))
   }, [])
+
+  useEffect(() => {
+    if (!selectedAgentId && storedAgents.length > 0) {
+      setSelectedAgentId(storedAgents[0].agentId)
+    }
+  }, [selectedAgentId, storedAgents])
+
+  const selectedAgent =
+    storedAgents.find((agent) => agent.agentId === selectedAgentId) ?? null
+  const shouldShowConfiguredAgentOption =
+    Boolean(TARGET_AGENT_ID) &&
+    !storedAgents.some((agent) => agent.agentId === TARGET_AGENT_ID)
 
   const appendMessage = useCallback((role: MessageRole, text: string) => {
     const trimmed = text.trim()
@@ -235,11 +260,13 @@ export function AgentVoiceConsole() {
     modelId: 'scribe_v2_realtime',
     commitStrategy: CommitStrategy.AUTOMATIC,
     onPartialTranscript: (data) => {
-      setScribePartialTranscript(data.text ?? '')
+      const partialText = typeof data.text === 'string' ? data.text : ''
+      setScribePartialTranscript(partialText)
     },
     onCommittedTranscript: (data) => {
       setScribePartialTranscript('')
-      const text = data.text?.trim()
+      const committedText = typeof data.text === 'string' ? data.text : ''
+      const text = committedText.trim()
       if (!text) {
         return
       }
@@ -274,8 +301,8 @@ export function AgentVoiceConsole() {
   })
 
   const startConversation = async () => {
-    if (!TARGET_AGENT_ID) {
-      setError('No ElevenLabs agent ID is configured.')
+    if (!selectedAgentId) {
+      setError('Select an agent before starting the conversation.')
       return
     }
 
@@ -289,19 +316,20 @@ export function AgentVoiceConsole() {
 
     try {
       await ensureMicrophoneAccess()
-      const token = await fetchConversationToken(TARGET_AGENT_ID, { userId })
+      const token = await fetchConversationToken(selectedAgentId, { userId })
       const fetchedAt = new Date().toISOString()
       setTokenMetadata({ ...token, fetchedAt })
 
       const id = await conversation.startSession({
-        agentId: TARGET_AGENT_ID,
+        agentId: selectedAgentId,
         conversationToken: token.token,
         connectionType: 'webrtc',
         userId,
       })
 
       setSessionId(id)
-      appendMessage('system', 'Conversation started. Say hello!')
+      const agentLabel = selectedAgent?.name ?? selectedAgentId
+      appendMessage('system', `Conversation with ${agentLabel} started. Say hello!`)
     } catch (cause) {
       handleConversationError(cause)
     } finally {
@@ -322,7 +350,7 @@ export function AgentVoiceConsole() {
     }
   }
 
-  const handleSendManualMessage = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSendManualMessage = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmed = manualMessage.trim()
     if (!trimmed) {
@@ -416,20 +444,64 @@ export function AgentVoiceConsole() {
         </p>
         <h2 className="text-2xl font-semibold text-white">Talk to your ElevenLabs agent</h2>
         <p className="text-sm text-slate-300">
-          Click start to establish a secure WebRTC session with{' '}
-          <code className="font-mono text-cyan-300">{TARGET_AGENT_ID}</code>. The widget will
-          request a single-use conversation token from the backend, so your API key never
-          leaves the server.
+          Pick any stored agent and click start to establish a secure WebRTC session. The console requests a
+          single-use token from <code className="font-mono text-cyan-300">POST /api/agents/conversation-token</code> so
+          your ElevenLabs API key never leaves the backend.
         </p>
       </header>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-5">
+          <div className="space-y-2 rounded-xl border border-white/5 bg-slate-950/60 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="text-sm font-semibold text-white">Agent selection</label>
+              <button
+                type="button"
+                onClick={() => agentsQuery.refetch()}
+                disabled={agentsQuery.isPending || agentsQuery.isRefetching}
+                className="inline-flex items-center rounded-lg border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {agentsQuery.isRefetching ? 'Refreshing…' : 'Refresh list'}
+              </button>
+            </div>
+            <select
+              value={selectedAgentId}
+              onChange={(event) => setSelectedAgentId(event.target.value)}
+              className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400"
+            >
+              <option value="">
+                {storedAgents.length === 0 ? 'Create an agent to get started' : 'Select an agent to connect'}
+              </option>
+              {storedAgents.map((agent) => (
+                <option key={agent.agentId} value={agent.agentId}>
+                  {formatAgentOptionLabel(agent)}
+                </option>
+              ))}
+              {shouldShowConfiguredAgentOption && TARGET_AGENT_ID && (
+                <option value={TARGET_AGENT_ID}>
+                  Configured default ({TARGET_AGENT_ID.slice(0, 8)}…)
+                </option>
+              )}
+            </select>
+            {agentsQuery.isPending && <p className="text-xs text-slate-400">Loading stored agents…</p>}
+            {agentsQuery.isError && (
+              <p className="text-xs text-rose-300">
+                {agentsQuery.error instanceof Error
+                  ? agentsQuery.error.message
+                  : 'Unable to load agents. Try refreshing.'}
+              </p>
+            )}
+            {!agentsQuery.isPending && !agentsQuery.isError && storedAgents.length === 0 && (
+              <p className="text-xs text-amber-200">
+                Provision an agent in the form above to store it for future calls.
+              </p>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={startConversation}
-              disabled={isConnected || isStarting || !userId}
+              disabled={isConnected || isStarting || !userId || !selectedAgentId}
               className="inline-flex items-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isStarting ? 'Starting…' : 'Start conversation'}
@@ -449,7 +521,7 @@ export function AgentVoiceConsole() {
             </span>
 
             <span className="text-xs font-medium text-slate-400">
-              Mode: {mode ?? 'idle'} {conversation.isSpeaking ? '(agent speaking)' : ''}
+              Mode: {mode} {conversation.isSpeaking ? '(agent speaking)' : ''}
             </span>
           </div>
 
@@ -610,9 +682,32 @@ export function AgentVoiceConsole() {
               Session details
             </p>
             <dl className="mt-3 space-y-2 text-sm text-slate-200">
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate-400">Agent</dt>
+                <dd className="text-right">
+                  <p className="font-semibold text-white">{selectedAgent?.name ?? (selectedAgentId ? 'Configured agent' : 'Select an agent')}</p>
+                  <p className="font-mono text-xs text-cyan-300">
+                    {selectedAgentId ? selectedAgentId : '—'}
+                  </p>
+                </dd>
+              </div>
               <div className="flex justify-between">
-                <dt className="text-slate-400">Agent ID</dt>
-                <dd className="font-mono text-xs text-cyan-300">{TARGET_AGENT_ID}</dd>
+                <dt className="text-slate-400">Language</dt>
+                <dd className="font-semibold text-white">
+                  {selectedAgent ? selectedAgent.language.toUpperCase() : '—'}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-slate-400">Voice</dt>
+                <dd className="font-mono text-xs text-cyan-300">
+                  {selectedAgent?.voiceId ?? '—'}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-slate-400">Model</dt>
+                <dd className="font-mono text-xs text-emerald-300">
+                  {selectedAgent?.modelId ?? '—'}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-slate-400">User ID</dt>
@@ -626,7 +721,7 @@ export function AgentVoiceConsole() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-slate-400">Agent mode</dt>
-                <dd className="font-semibold capitalize">{mode ?? 'idle'}</dd>
+                <dd className="font-semibold capitalize">{mode}</dd>
               </div>
             </dl>
           </div>

@@ -30,13 +30,21 @@ export type CreateAgentPayload = {
   modelId?: AgentModelId
 }
 
-export type CreateAgentResponse = {
+export type AgentRecord = {
   agentId: string
   name: string
+  systemPrompt: string
   language: AgentLanguage
   voiceId: string
   firstMessage: string
   modelId: AgentModelId
+  createdAt: string
+}
+
+export type CreateAgentResponse = AgentRecord
+
+export type ListAgentsResponse = {
+  agents: Array<AgentRecord>
 }
 
 export type ConversationTokenResponse = {
@@ -90,6 +98,10 @@ export function createAgent(payload: CreateAgentPayload) {
     },
     body: JSON.stringify(payload),
   })
+}
+
+export function fetchAgents() {
+  return request<ListAgentsResponse>('/agents')
 }
 
 export function fetchConversationToken(agentId: string, options?: { userId?: string }) {

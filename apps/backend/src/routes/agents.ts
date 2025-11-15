@@ -1,7 +1,11 @@
-import type { NextFunction, Request, Response } from 'express';
-import { Router } from 'express';
+import { type NextFunction, type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 
+import {
+  listAgents,
+  persistAgentRecord,
+  type StoredAgentRecord,
+} from '../services/agent-store.js';
 import {
   createConversationalAgent,
   requestConversationToken,
@@ -10,7 +14,6 @@ import {
   supportedModelIds,
   supportedVoiceIds,
 } from '../services/elevenlabs-agents.js';
-
 
 export const agentsRouter = Router();
 
@@ -58,6 +61,15 @@ const conversationTokenSchema = z.object({
     .optional(),
 });
 
+agentsRouter.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agents = await listAgents();
+    res.json({ agents });
+  } catch (error) {
+    next(error);
+  }
+});
+
 agentsRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = await createAgentSchema.parseAsync(req.body);
@@ -71,14 +83,22 @@ agentsRouter.post('/', async (req: Request, res: Response, next: NextFunction) =
       modelId: payload.modelId,
     });
 
-    res.status(201).json({
+    const createdAt = new Date().toISOString();
+
+    const record: StoredAgentRecord = {
       agentId: agent.agentId,
       name: payload.name,
+      systemPrompt: payload.systemPrompt,
+      firstMessage: agent.firstMessage,
       language: agent.language,
       voiceId: agent.voiceId,
-      firstMessage: agent.firstMessage,
       modelId: agent.modelId,
-    });
+      createdAt,
+    };
+
+    await persistAgentRecord(record);
+
+    res.status(201).json(record);
   } catch (error) {
     next(error);
   }

@@ -1,15 +1,14 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { AgentResultCard } from './AgentResultCard'
 
 import type { ChangeEvent, FormEvent } from 'react'
 
 
-import type { CreatedAgentRecord } from './AgentResultCard'
 import type { AgentLanguage, AgentModelId } from '@/lib/agent-options'
 import type { CreateAgentPayload } from '@/lib/api-client'
-import { createAgent } from '@/lib/api-client'
+import { createAgent, fetchAgents } from '@/lib/api-client'
 import {
   AGENT_LANGUAGES,
   AGENT_MODELS,
@@ -41,13 +40,18 @@ const createInitialFormState = (): AgentFormState => {
 
 export default function AgentCreator() {
   const [formState, setFormState] = useState<AgentFormState>(createInitialFormState)
-  const [createdAgents, setCreatedAgents] = useState<Array<CreatedAgentRecord>>([])
   const [validationError, setValidationError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+
+  const agentsQuery = useQuery({
+    queryKey: ['agents'],
+    queryFn: fetchAgents,
+  })
 
   const createAgentMutation = useMutation({
     mutationFn: (payload: CreateAgentPayload) => createAgent(payload),
     onSuccess: (agent) => {
-      setCreatedAgents((prev) => [{ ...agent, createdAt: new Date().toISOString() }, ...prev])
+      queryClient.invalidateQueries({ queryKey: ['agents'] })
       setFormState((prev) => ({
         ...prev,
         name: '',
@@ -110,6 +114,7 @@ export default function AgentCreator() {
     createAgentMutation.mutate(payload)
   }
 
+  const createdAgents = agentsQuery.data?.agents ?? []
   const languageVoiceOptions = getLanguageVoiceOptions(formState.language)
 
   return (
@@ -302,13 +307,25 @@ export default function AgentCreator() {
             </div>
 
             <div className="space-y-4">
-              {createdAgents.length === 0 ? (
+              {agentsQuery.isPending && <p className="text-sm text-slate-400">Loading stored agents…</p>}
+
+              {agentsQuery.isError && (
+                <p className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
+                  {agentsQuery.error instanceof Error
+                    ? agentsQuery.error.message
+                    : 'Unable to load the agent timeline.'}
+                </p>
+              )}
+
+              {!agentsQuery.isPending && !agentsQuery.isError && createdAgents.length === 0 && (
                 <p className="text-sm text-slate-400">
                   Agents you create will show up here with their assigned voice ID, language, and model straight from ElevenLabs.
                 </p>
-              ) : (
-                createdAgents.map((agent) => <AgentResultCard key={agent.agentId + agent.createdAt} agent={agent} />)
               )}
+
+              {createdAgents.map((agent) => (
+                <AgentResultCard key={agent.agentId + agent.createdAt} agent={agent} />
+              ))}
             </div>
           </article>
         </aside>

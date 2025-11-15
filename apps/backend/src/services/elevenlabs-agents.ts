@@ -99,6 +99,14 @@ const resolveModelId = (incoming?: string): TtsConversationalModel => {
   return fallback;
 };
 
+export type CreatedAgent = {
+  agentId: string;
+  voiceId: string;
+  language: AgentLanguage;
+  firstMessage: string;
+  modelId: TtsConversationalModel;
+};
+
 export const createConversationalAgent = async ({
   name,
   systemPrompt,
@@ -106,7 +114,7 @@ export const createConversationalAgent = async ({
   language,
   voiceId,
   modelId,
-}: CreateAgentOptions) => {
+}: CreateAgentOptions): Promise<CreatedAgent> => {
   const resolvedVoiceId = resolveVoiceId(language, voiceId);
   const resolvedModelId = resolveModelId(modelId);
 
