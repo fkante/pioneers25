@@ -39,6 +39,12 @@ export type CreateAgentResponse = {
   modelId: AgentModelId
 }
 
+export type ConversationTokenResponse = {
+  token: string
+  expiresAt: string | null
+  ttl: number | null
+}
+
 function resolveUrl(path: string) {
   if (!path) {
     return baseUrl
@@ -79,6 +85,24 @@ export function createAgent(payload: CreateAgentPayload) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
+  })
+}
+
+export function fetchConversationToken(agentId: string, options?: { userId?: string }) {
+  const body: Record<string, string> = {
+    agentId,
+  }
+
+  if (options?.userId) {
+    body.userId = options.userId
+  }
+
+  return request<ConversationTokenResponse>('/agents/conversation-token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
   })
 }
 

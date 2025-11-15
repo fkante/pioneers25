@@ -15,6 +15,8 @@ apiRouter.get('/', (_req: Request, res: Response) => {
       health: '/health',
       api: '/api',
       users: '/api/users',
+      createAgent: '/api/agents',
+      conversationToken: '/api/agents/conversation-token',
     },
   });
 });

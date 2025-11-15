@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import {
   createConversationalAgent,
+  requestConversationToken,
   supportedAgentLanguages,
   supportedModelIds,
   supportedVoiceIds,
@@ -47,6 +48,15 @@ const createAgentSchema = z
     }
   });
 
+const conversationTokenSchema = z.object({
+  agentId: z.string().min(1, 'agentId is required'),
+  userId: z
+    .string()
+    .trim()
+    .min(1)
+    .optional(),
+});
+
 agentsRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = await createAgentSchema.parseAsync(req.body);
@@ -68,6 +78,21 @@ agentsRouter.post('/', async (req: Request, res: Response, next: NextFunction) =
       firstMessage: agent.firstMessage,
       modelId: agent.modelId,
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+agentsRouter.post('/conversation-token', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const payload = await conversationTokenSchema.parseAsync(req.body);
+
+    const token = await requestConversationToken({
+      agentId: payload.agentId,
+      userId: payload.userId,
+    });
+
+    res.json(token);
   } catch (error) {
     next(error);
   }

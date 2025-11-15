@@ -10,6 +10,8 @@ export type AgentLanguage = (typeof supportedAgentLanguages)[number];
 export const voiceGenders = ['female', 'male'] as const;
 export type VoiceGender = (typeof voiceGenders)[number];
 
+const ELEVENLABS_API_BASE_URL = 'https://api.elevenlabs.io';
+
 const languageVoiceCatalog = {
   en: {
     female: 'OYTbf65OHHFELVut7v2H', // Hope English Female
@@ -143,6 +145,75 @@ export const createConversationalAgent = async ({
     throw new AppError(
       502,
       'Failed to create agent with ElevenLabs. Please verify your API key and payload.'
+    );
+  }
+};
+
+type ConversationTokenApiResponse = {
+  token?: string;
+  expires_at?: string;
+  expiresAt?: string;
+  ttl?: number;
+};
+
+type ConversationTokenResult = {
+  token: string;
+  expiresAt: string | null;
+  ttl: number | null;
+};
+
+export const requestConversationToken = async ({
+  agentId,
+  userId,
+}: {
+  agentId: string;
+  userId?: string;
+}): Promise<ConversationTokenResult> => {
+  if (!agentId) {
+    throw new AppError(400, 'agentId is required to request a conversation token.');
+  }
+
+  const url = new URL('/v1/convai/conversation/token', ELEVENLABS_API_BASE_URL);
+  url.searchParams.set('agent_id', agentId);
+  if (userId) {
+    url.searchParams.set('user_id', userId);
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'xi-api-key': config.elevenlabs.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      throw new AppError(
+        response.status,
+        errorMessage || `Failed to fetch conversation token from ElevenLabs (status ${response.status}).`
+      );
+    }
+
+    const payload = (await response.json()) as ConversationTokenApiResponse;
+
+    if (!payload?.token) {
+      throw new AppError(502, 'ElevenLabs response did not include a conversation token.');
+    }
+
+    return {
+      token: payload.token,
+      expiresAt: payload.expires_at ?? payload.expiresAt ?? null,
+      ttl: typeof payload.ttl === 'number' ? payload.ttl : null,
+    };
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    console.error('Error requesting conversation token from ElevenLabs:', error);
+    throw new AppError(
+      502,
+      'Unable to retrieve conversation token from ElevenLabs. Please try again later.'
     );
   }
 };
